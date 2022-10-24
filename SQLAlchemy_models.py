@@ -65,6 +65,6 @@ class Sale(Base):
     def __str__(self) -> str:
         return f'Sale {self.id}: {self.price}, {self.sale_date}, {self.stock_id}, {self.count}'
     
-def create_tables(engine):
-    Base.metadata.drop_all(engine)
+def create_tables(engine, drop_flag:bool=False):
+    if drop_flag: Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
