@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from SQLAlchemy_models import create_tables
+from SQLAlchemy_models import Book, Publisher, Sale, Shop, Stock, create_tables
+import json
 
         
 def connect_to_db(db, login, password, db_name):
@@ -9,7 +10,7 @@ def connect_to_db(db, login, password, db_name):
     DSN = f'{db}://{login}:{password}@localhost:5432/{db_name}'
     return create_engine(DSN)
 
-def fill_db(engine):
+def fill_db_manually(engine):
 
     from SQLAlchemy_models import Publisher, Book, Shop, Stock, Sale
     
@@ -27,34 +28,62 @@ def fill_db(engine):
     session.add_all([publisher1, publisher2, book1, book2, shop1, shop2, stock1, stock2, sale1, sale2])
     session.commit()
 
-def find_shop_by_publisher(engine, name:str=None, id:int=None):
+def fill_db_from_json(engine, file_name):
+    session = sessionmaker(bind=engine)()
+    with open(file_name, 'r') as filler:
+        data = json.load(filler)
+    for element in data:
+        model = {
+            'publisher':Publisher,
+            'book': Book,
+            'shop': Shop,
+            'stock': Stock,
+            'sale': Sale
+        }[element.get('model')]
+        session.add(model(id=element.get('pk'), **element.get('fields'))) 
+    session.commit() 
+    
+def define_params():
+    '''Вспомогательная функция для поиска магазина и издателя'''
+    request = input('Введите имя или идентификатор издателя: ')
+    param = {}
+    if request == '':
+        return param
+    elif request.isnumeric():
+        param['id'] = int(request)
+    else:
+        param['name'] = request
+    return param
+
+def find_shop_by_publisher(engine):
     '''Поиск магазинов с книгами, выпущенными искомым издателем'''
     
     from SQLAlchemy_models import Publisher, Book, Shop, Stock
-    
+    params = define_params()
     session = sessionmaker(bind=engine)()
-    if id:
+    if 'id' in params:
         for c in (session.query(Shop).join(Stock.shop).join(Stock.book)
-            .join(Book.publisher).filter(Publisher.id == id)):
+            .join(Book.publisher).filter(Publisher.id == params.get('id'))):
             print(c)
-    elif name:
+    elif 'name' in params:
         for c in (session.query(Shop).join(Stock.shop).join(Stock.book)
-            .join(Book.publisher).filter(Publisher.name == name)):
+            .join(Book.publisher).filter(Publisher.name == params.get('name'))):
             print(c)
     session.close()
     
-def get_publisher(engine, name:str=None, id:int=None):
+def get_publisher(engine):
     '''Поиск издателя по имени или id'''
     
     from sqlalchemy.orm import sessionmaker
     from SQLAlchemy_models import Publisher
     
+    params = define_params()
     session = sessionmaker(bind=engine)()
-    if name:
-        print(*session.query(Publisher).filter(Publisher.name == name).all())
-    if id:
-        print(*session.query(Publisher).filter(Publisher.id == id).all())
-    if not name and not id:
+    if 'name' in params:
+        print(*session.query(Publisher).filter(Publisher.name == params.get('name')).all())
+    elif 'id' in params:
+        print(*session.query(Publisher).filter(Publisher.id == params.get('id')).all())
+    else:
         print('Request something already!')
     session.close()
     
@@ -63,15 +92,9 @@ if __name__ == '__main__':
     with open('password.txt') as pw:
         password = pw.read()
     engine = connect_to_db('postgresql', 'postgres', password, 'book_shop')
-    request = input('Введите имя или идентификатор издателя: ')
-    param = {}
-    if request.isnumeric():
-        param['id'] = int(request)
-    else:
-        param['name'] = request
-
-    # create_tables(engine)
-    # fill_db(engine)
-    get_publisher(engine, **param)
-    find_shop_by_publisher(engine, **param)
+    # create_tables(engine, True)
+    # fill_db_manually(engine)
+    # fill_db_from_json(engine, 'book_shop_db.json')
+    # get_publisher(engine)
+    # find_shop_by_publisher(engine)
     

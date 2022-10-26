@@ -19,12 +19,14 @@ class Book(Base):
     
     id = sq.Column(sq.Integer, primary_key=True)
     title = sq.Column(sq.String(length=60), unique=True)
-    publisher_id = sq.Column(sq.Integer, sq.ForeignKey('publisher.id'), nullable=False)
+    id_publisher = sq.Column(sq.Integer, sq.ForeignKey('publisher.id'), nullable=False)
     
     publisher = relationship(Publisher, backref='books')
     
     def __str__(self) -> str:
-        return f'Book {self.id}: {self.title}, {self.publisher_id}'
+        return f'Book {self.id}: {self.title}, {self.id_publisher}'
+    
+    
 class Shop(Base):
     
     __tablename__ = 'shop'
@@ -40,15 +42,15 @@ class Stock(Base):
     __tablename__ = 'stock'
     
     id = sq.Column(sq.Integer, primary_key=True)
-    book_id = sq.Column(sq.Integer, sq.ForeignKey('book.id'), nullable=False)
-    shop_id = sq.Column(sq.Integer, sq.ForeignKey('shop.id'), nullable=False)
+    id_book = sq.Column(sq.Integer, sq.ForeignKey('book.id'), nullable=False)
+    id_shop = sq.Column(sq.Integer, sq.ForeignKey('shop.id'), nullable=False)
     count = sq.Column(sq.Integer, nullable=False)
     
     book = relationship(Book, backref='stock')
     shop = relationship(Shop, backref='stock')
     
     def __str__(self) -> str:
-        return f'Stock {self.id}: {self.book_id}, {self.shop_id}, {self.count}'
+        return f'Stock {self.id}: {self.id_book}, {self.id_shop}, {self.count}'
     
 class Sale(Base):
     
@@ -56,14 +58,14 @@ class Sale(Base):
     
     id = sq.Column(sq.Integer, primary_key=True)
     price = sq.Column(sq.Float, nullable=False)
-    sale_date = sq.Column(sq.Date, nullable=False)
-    stock_id = sq.Column(sq.Integer, sq.ForeignKey('stock.id'), nullable=False)
+    date_sale = sq.Column(sq.Date, nullable=False)
+    id_stock = sq.Column(sq.Integer, sq.ForeignKey('stock.id'), nullable=False)
     count = sq.Column(sq.Integer, nullable=False)
     
     sale = relationship(Stock, backref='sale')
     
     def __str__(self) -> str:
-        return f'Sale {self.id}: {self.price}, {self.sale_date}, {self.stock_id}, {self.count}'
+        return f'Sale {self.id}: {self.price}, {self.date_sale}, {self.id_stock}, {self.count}'
     
 def create_tables(engine, drop_flag:bool=False):
     if drop_flag: Base.metadata.drop_all(engine)
